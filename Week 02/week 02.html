@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .cell {
+      width: 6px;
+      height: 6px;
+      border-right: 1px solid #fff;
+      border-bottom: 1px solid #fff;
+      background-color: rgb(182, 181, 181);
+      vertical-align: middle;
+    }
+    #container{
+      width: 701px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+
+  <script>
+    function sleep(t){
+      return new Promise(resolve => setTimeout(resolve, t))
+    }
+    
+    let container = document.getElementById("container");
+    let map = localStorage["map"] ? JSON.parse(localStorage["map"]) : Array(10000).fill(0);
+    for (let i = 0; i < 100; i++){
+      for (let j = 0; j < 100; j++){
+        let cell = document.createElement("div");
+        cell.classList = "cell";
+        if (map[100 * i + j]){
+          cell.style.backgroundColor = "black"
+        }
+        cell.addEventListener("mousemove", () => {
+          if(mousedown){
+            if (clear) {
+              map[100 * i + j] = 0;
+              cell.style.backgroundColor = ""
+            }else{
+              map[100 * i + j] = 1;
+              cell.style.backgroundColor = "black"
+            }
+          }
+        })
+        container.appendChild(cell)
+      }
+    }
+    let mousedown = false;
+    let clear = false;
+    document.addEventListener("mousedown", (e) => {
+      mousedown = true;
+      clear = (e.which === 3)
+    })
+    document.addEventListener("mouseup", () => mousedown = false)
+    document.addEventListener("contextmenu", (e) => e.preventDefault())
+
+    async function findPath(map, start, end){
+      // let queue = [start];
+      let queue = new MinHeap([start], (a,b) => distance(a) - distance(b))
+      let prevPoint = Object.create(map);
+      while(queue.size()){
+        // let [x, y] = queue.shift();extract()
+        let [x, y] = queue.extract();
+        console.log(queue.extract())
+        if(x === end[0] && y === end[1]){
+          let path = [];
+          while(x !== start[0] && y !== start[1]){
+            path.push(map[y*100 + x]);
+            [x, y] = prevPoint[y*100+x];
+            await sleep(30)
+            container.children[y * 100 + x].style.backgroundColor = "purple"
+          }
+          return path
+        }
+        function distance(point){
+          return point && (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2
+        }
+        // 上下左右
+        await insert(x-1, y, [x, y]);
+        await insert(x+1, y, [x, y]);
+        await insert(x, y-1, [x, y]);
+        await insert(x, y+1, [x, y]);
+        // 斜角
+        await insert(x-1, y-1, [x, y]);
+        await insert(x+1, y+1, [x, y]);
+        await insert(x-1, y+1, [x, y]);
+        await insert(x+1, y-1, [x, y]);
+      }
+      async function insert(x, y, pre){
+        if(x < 0 || x >= 100 || y < 0 || y >= 100){
+          return
+        }
+        if(prevPoint[y * 100 + x]){
+          return
+        }
+        container.children[y * 100 + x].style.backgroundColor = "blue"
+        // map[y * 100 + x] = 2;
+        prevPoint[y * 100 + x] = pre;
+        // queue.push([x, y]);
+        queue.insert([x, y]);
+      }
+      return false
+    }
+    class MinHeap {
+      constructor(data, carpare) {
+          this.heap = []
+          this.carpare = carpare || ((a, b) => a - b)
+          this.insert(...data)
+      }
+
+      //下面三个是工具函数
+      getLeftIndex(index) {
+          return 2 * index + 1;
+      }
+      getRightIndex(index) {
+          return 2 * index + 2;
+      }
+      getParentIndex(index) {
+          if (index === 0) {
+              return undefined;
+          }
+          return Math.floor((index - 1) / 2);
+      }
+
+      insert(value) {
+          if (value != null) {
+              this.heap.push(value);
+              this.upHead(this.heap.length - 1); //上移操作
+              return true;
+          }
+          return false;
+      }
+
+      //上移
+      upHead(index) {
+          //拿到父节点
+          let parent = this.getParentIndex(index);
+          while (index > 0 && this.carpare(this.heap[index], this.heap[parent]) < 0) {
+
+              //进行父子节点交换
+              this.swap(this.heap, parent, index);
+              index = parent;
+              parent = this.getParentIndex(index);
+          }
+
+      }
+          //交换
+      swap(arr, a, b) {
+          [arr[b], arr[a]] = [arr[a], arr[b]];
+      }
+
+
+      
+      extract() {
+        // 空堆
+        if (this.heap.length === 0) {
+            return false;
+        }
+        // 堆中就一值
+        if (this.heap.length === 1) {
+            return this.heap.shift();
+        }
+
+        //堆中多值
+        let removeValue = this.heap[0];
+        // 交换堆顶堆底
+        [this.heap[0], this.heap[this.heap.length - 1]] = [this.heap[this.heap.length - 1], this.heap[0]];
+        this.heap.pop();
+
+        //进行堆化
+
+
+        this.sinkDown(0);
+        return removeValue;
+
+      }
+
+      //堆化
+      sinkDown(index) {
+        let element = index;
+        const left = this.getLeftIndex(index);
+        const right = this.getRightIndex(index);
+        const size = this.size();
+        if (left < size && (this.carpare(this.heap[element], this.heap[left])>0)) {
+            element = left;
+
+        }
+        if (right < size && this.carpare(this.heap[index], this.heap[right])>0) {
+            element = right;
+        }
+        if (index !== element) {
+            this.swap(this.heap, index, element);
+
+
+            this.sinkDown(element);
+        }
+
+      }
+
+
+      size() {
+          return this.heap.length;
+      }
+      isEmpty() {
+          return this.size === 0;
+      }
+      findMin() {
+          return this.heap.length===0 ? undefined : this.heap[0];
+      }
+    }
+  </script>
+</body>
+</html>
