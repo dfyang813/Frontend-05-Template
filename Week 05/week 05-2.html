@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="container">Lorem ipsum dolor sit amet consectetur adipisicing elit. Corporis esse aut inventore accusantium rem excepturi, qui asperiores, eum eligendi blanditiis exercitationem placeat laudantium illum iusto velit perferendis, quas magnam earum.
+    Lorem ipsum, dolor sit amet consectetur adipisicing elit. Maiores dolores accusantium ullam maxime recusandae ad temporibus ab dolore sapiente, architecto excepturi dolorem, voluptate sequi eveniet quaerat, quae rerum. Quae, modi.
+    Lorem ipsum dolor sit amet consectetur adipisicing elit. Id, iure numquam corrupti veniam magni perspiciatis. Mollitia delectus quidem obcaecati sunt optio vitae voluptas nisi iure corporis, odit animi, repudiandae aperiam.
+    Lorem ipsum dolor sit amet consectetur, adipisicing elit. Beatae illum vel quas a fugiat impedit nulla voluptatum voluptatibus, cupiditate explicabo, corporis fuga voluptates? Est delectus, eius officia quam sit provident.
+    Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestiae, sint. Assumenda perferendis, animi distinctio itaque mollitia, inventore neque tempore voluptate id excepturi, aliquid doloribus a aperiam. Pariatur consectetur repellat suscipit!
+    Lorem ipsum dolor sit amet consectetur adipisicing elit. Pariatur repudiandae perspiciatis nemo nostrum vitae, rem magni similique dolore dolor ut modi unde voluptates voluptas ad cupiditate, nam tenetur consequatur eum?
+    Lorem ipsum dolor, sit amet consectetur adipisicing elit. Recusandae similique facere fugit eum sit expedita! Cupiditate nam error ad, nihil, alias explicabo suscipit numquam neque soluta architecto saepe ratione nemo.
+    Lorem, ipsum dolor sit amet consectetur adipisicing elit. Quaerat minima cumque numquam officia saepe iusto accusamus impedit voluptas eos, quasi natus velit. Itaque voluptatem aut fugiat doloribus quidem deleniti minima.
+  </div>
+  <div id='drag' style="width:50px;height:50px;background:red;display:inline-block;"></div>
+  <script>
+    let drag = document.getElementById("drag");
+    let baseX = 0, baseY = 0;
+    drag.addEventListener('mousedown', function(e){
+      let startX = e.clientX, startY = e.clientY;
+      let up = (e) => {
+        baseX = baseX + e.clientX - startX;
+        baseY = baseY + e.clientY - startY;
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener('mouseup',up);
+      }
+      let move = e => {
+        let range = getNearst(e.clientX, e.clientY);
+        range.insertNode(drag);
+        // drag.style.transform = `translate(${baseX + e.clientX - startX}px, ${baseY + e.clientY - startY}px)`;
+      }
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    })
+
+    let ranges = [];
+    let container = document.getElementById('container');
+    for (let i = 0; i< container.childNodes[0].textContent.length; i++) {
+      let range = document.createRange();
+      range.setStart(container.childNodes[0], i);
+      range.setEnd(container.childNodes[0], i);
+      ranges.push(range);
+      console.log(range.getBoundingClientRect());
+    }
+    function getNearst(x, y) {
+      let min = Infinity;
+      let nearst = null;
+      for(let range of ranges){
+        let react = range.getBoundingClientRect();
+        let distance = (react.x - x) ** 2 + (react.y - y) ** 2;
+        if (distance < min) {
+          min = distance;
+          nearst = range;
+        }
+      }
+      return nearst;
+    }
+    document.addEventListener('selectstart', e => e.preventDefault());
+  </script>
+</body>
+</html>
